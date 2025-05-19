@@ -1,0 +1,12 @@
+plugins {
+    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'maven-publish'
+}
+
+def javaDir = "${projectDir}/../../java"
+def buildFile = new File("${javaDir}/build.gradle")
+def buildUrl = "https://charmony.dev/files/main/build.gradle"
+
+apply from: buildFile.exists() ? buildFile : buildUrl
+
+// Add local dependencies here.

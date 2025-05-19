@@ -1,0 +1,14 @@
+.DS_Store
+.gradle/
+.code/
+.vscode/
+.idea/
+/build/*
+/bin
+!/build/.gitkeep
+/src/*
+!/src/.gitkeep
+.env
+package-lock.json
+node_modules
+projects.json

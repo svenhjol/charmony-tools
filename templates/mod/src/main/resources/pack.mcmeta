@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "description": "ExampleName resources",
+    "pack_format": ${pack_version}
+  }
+}

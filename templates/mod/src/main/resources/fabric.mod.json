@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "charmony-example-template",
+  "version": "${mod_version}",
+
+  "name": "ExampleName",
+  "description": "ExampleDescription.",
+  "authors": [
+    "svenhjol"
+  ],
+  "icon": "assets/charmony-example-template/textures/gui/sprites/icon.png",
+  "license": "MIT",
+  "environment": "*",
+  "mixins": [
+    "charmony-example-template.client.mixins.json",
+    "charmony-example-template.common.mixins.json"
+  ],
+  "accessWidener": "charmony-example-template.accesswidener",
+
+  "entrypoints": {
+    "main": [
+      "svenhjol.charmony.example_template.common.CommonInitializer"
+    ],
+    "client": [
+      "svenhjol.charmony.example_template.client.ClientInitializer"
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "*",
+    "java": ">=21",
+    "fabric-api": "*",
+    "charmony": ">=${charmony_version}",
+    "charmony-api": ">=${api_version}"
+  },
+
+  "contact": {
+    "homepage": "https://charmony.dev/mods/${mod_id}",
+    "sources": "https://github.com/svenhjol/${mod_id}"
+  }
+}

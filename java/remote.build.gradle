@@ -1,0 +1,205 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
+
+def props = new Properties()
+new URL("https://charmony.dev/files/main/gradle.properties").withInputStream { props.load(it) }
+
+// Load the project's properties file and override the local java props.
+file("${projectDir}/gradle.properties").withInputStream { props.load(it) }
+
+// Name given to the jar. Use the fabric-api convention of "api-version+minecraft_version"
+archivesBaseName = "${props.mod_id}"
+version = "${props.mod_version}+${props.minecraft_version}"
+group = props.maven_group
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+sourceSets {
+    main {
+        java { srcDir "src/main/java" }
+        resources { srcDir 'src/main/resources' }
+    }
+}
+
+loom {
+    def path = file("src/main/resources/${props.mod_id}.accesswidener")
+    if (path.exists()) {
+        accessWidenerPath = path
+    }
+}
+
+/*
+ * Download a mod jar (and its sources) from charmony.dev to the libs folder of the project.
+ */
+ext.downloadMod = { name, shortId ->
+    def version = props."${shortId}_version"
+
+    // Create a project "libs" folder if it doesn't exist.
+    def libsDir = new File("${projectDir}/libs")
+    !libsDir.exists() && libsDir.mkdir()
+
+    def jarName = "${name}-${version}+${props.minecraft_version}.jar";
+    def sourcesName = "${name}-${version}+${props.minecraft_version}-sources.jar";
+
+    [jarName, sourcesName].each { f ->
+        def file = new File("${libsDir}/${f}")
+        if (!file.exists()) {
+            def url = new URL("https://charmony.dev/files/main/mods/${f}")
+            file.withOutputStream { out -> url.openStream().transferTo(out) }
+        }
+    }
+
+    dependencies {
+        modImplementation "svenhjol.charmony:${name}:${version}+${props.minecraft_version}"
+    }
+}
+
+/**
+ * Embed a mod jar into the current project.
+ */
+ext.embedMod = { name, shortId ->
+    def version = props."${shortId}_version"
+    dependencies {
+        downloadMod(name, shortId)
+        include "svenhjol.charmony:${name}:${version}+${props.minecraft_version}"
+        modImplementation "svenhjol.charmony:${name}:${version}+${props.minecraft_version}"
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${props.minecraft_version}"
+    implementation "org.codehaus.groovy:groovy-json:3.0.17"
+    mappings loom.layered { officialMojangMappings() }
+    modImplementation "net.fabricmc:fabric-loader:${props.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${props.fabric_version}"
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Include Charmony.
+    if (props.include_charmony == "true") {
+        embedMod("charmony", "charmony")
+    }
+
+    // Include Charmony API.
+    if (props.include_api == "true") {
+        embedMod("charmony-api", "api")
+    }
+
+    // Include TOML libraries.
+    if (props.include_toml == "true") {
+        include "com.moandjiezana.toml:toml4j:${props.toml4j_version}"
+        include "com.electronwill.night-config:core:${props.tomlnc_version}"
+        include "com.electronwill.night-config:toml:${props.tomlnc_version}"
+    }
+
+    // Reference Charmony.
+    if (props.reference_charmony == "true") {
+        downloadMod("charmony", "charmony");
+    }
+
+    // Reference Charmony API.
+    if (props.reference_api == "true") {
+        downloadMod("charmony-api", "api");
+    }
+
+    // Reference TOML libraries.
+    if (props.reference_toml == "true" || props.include_toml == "true") {
+        implementation "com.moandjiezana.toml:toml4j:${props.toml4j_version}"
+        implementation "com.electronwill.night-config:core:${props.tomlnc_version}"
+        implementation "com.electronwill.night-config:toml:${props.tomlnc_version}"
+    }
+
+    // Reference ModMenu support.
+    if (props.modmenu_version) {
+        modImplementation("com.terraformersmc:modmenu:${props.modmenu_version}")
+    }
+}
+
+processResources {
+    inputs.property "mod_version", props.mod_version
+
+    filesMatching(["fabric.mod.json", "pack.mcmeta"]) {
+        expand (
+            "mod_id": props.mod_id,
+            "mod_version": props.mod_version,
+            "minecraft_version": props.minecraft_version,
+            "loader_version": props.loader_version,
+            "charmony_version": props.charmony_version,
+            "api_version": props.api_version,
+            "discord_link": props.discord_link,
+            "homepage_link": props.homepage_link,
+            "pack_version": props.pack_version,
+            "java_version": props.java_version
+        )
+    }
+
+    filesMatching(["**/*.mixins.json", "**/*.client.mixins.json", "**/*.common.mixins.json", "**/*.server.mixins.json"]) {
+        expand (
+            "refmap_file": props.mod_id + "-refmap.json"
+        )
+    }
+
+    duplicatesStrategy(DuplicatesStrategy.INCLUDE)
+
+    doLast {
+        fileTree(dir: "${buildDir}/resources/main", include: "**/*.template.json").each { file ->
+            JsonBuilder json = new JsonBuilder(new JsonSlurper().parseText(file.text))
+            String template = new JsonBuilder(json.content.template).toPrettyString()
+            def v = json.content.variants
+            Iterable<String> variants
+            if (v instanceof String) {
+                def f = new File("${buildDir}/resources/main/META-INF/variants/${v}.variants");
+                if (!f.exists()) {
+                    throw new Exception("Can't find ${f.name}")
+                }
+                variants = f.readLines().findAll { !it.isEmpty() }
+            } else {
+                variants = v
+            }
+            File dir = file.parentFile
+            dir.mkdirs()
+            String name = file.name.replace(".template.json", ".json")
+            String[] replacements = variants.remove(0).split("\\|")
+            for (variant in variants) {
+                Map<String, String> s = [replacements, variant.split("\\|", -1)].transpose().collectEntries()
+                def outputFile = new File(dir, s.inject(name) { r, e -> r.replace(e.key, e.value) })
+                if (!outputFile.exists()) {
+                    outputFile.createNewFile()
+                    outputFile.text = s.inject(template) { r, e -> r.replace(e.key, e.value) }
+                }
+            }
+            file.delete() // Remove the template file after processing
+        }
+    }
+}
+
+tasks.sourcesJar {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+repositories {
+    flatDir { dir 'libs' }
+    maven { url "https://maven.terraformersmc.com/" }
+    mavenCentral()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}"}
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
