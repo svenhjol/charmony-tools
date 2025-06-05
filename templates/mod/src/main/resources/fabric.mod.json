@@ -8,7 +8,7 @@
   "authors": [
     "svenhjol"
   ],
-  "icon": "assets/charmony-example-template/textures/gui/sprites/icon.png",
+  "icon": "assets/charmony/textures/gui/sprites/charmony-example-template.png",
   "license": "MIT",
   "environment": "*",
   "mixins": [
