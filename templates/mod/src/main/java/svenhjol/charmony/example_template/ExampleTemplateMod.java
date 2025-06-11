@@ -22,8 +22,4 @@ public final class ExampleTemplateMod extends Mod {
         }
         return instance;
     }
-
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(ID, path);
-    }
 }
