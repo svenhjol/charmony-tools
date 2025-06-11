@@ -1,9 +1,9 @@
 package svenhjol.charmony.example_template;
 
 import net.minecraft.resources.ResourceLocation;
-import svenhjol.charmony.core.annotations.ModDefinition;
+import svenhjol.charmony.api.core.ModDefinition;
+import svenhjol.charmony.api.core.Side;
 import svenhjol.charmony.core.base.Mod;
-import svenhjol.charmony.core.enums.Side;
 
 @ModDefinition(
     id = ExampleTemplateMod.ID,

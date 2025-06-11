@@ -1,7 +1,7 @@
 package svenhjol.charmony.example_template.client;
 
+import svenhjol.charmony.api.core.Side;
 import net.fabricmc.api.ClientModInitializer;
-import svenhjol.charmony.core.enums.Side;
 
 public final class ClientInitializer implements ClientModInitializer {
     @Override

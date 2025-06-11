@@ -1,7 +1,7 @@
 package svenhjol.charmony.example_template.client.mixins;
 
+import svenhjol.charmony.api.core.Side;
 import svenhjol.charmony.core.base.MixinConfig;
-import svenhjol.charmony.core.enums.Side;
 import svenhjol.charmony.example_template.ExampleTemplateMod;
 
 public class ClientMixinConfig extends MixinConfig {
