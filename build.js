@@ -1,9 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
+import { execSync } from 'child_process';
 import { srcFolder } from './libs/paths.js';
 import { buildAndCopy } from './libs/project.js';
 import { hideBin } from 'yargs/helpers';
+
+// Run update.js first
+console.log('Running update.js...');
+execSync('node update.js', { stdio: 'inherit' });
 
 const argv = yargs(hideBin(process.argv))
     .option('clean', {
