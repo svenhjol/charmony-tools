@@ -1,6 +1,7 @@
 {
   "pack": {
     "description": "ExampleName resources",
-    "pack_format": ${pack_version}
+    "max_format": ${pack_version},
+    "min_format": ${pack_version}
   }
 }
